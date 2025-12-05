@@ -8,11 +8,11 @@ pipeline {
     tools {
         maven 'MyLocalMaven'
         jdk 'JDK-17'
-        // Scanner removed from here to prevent syntax errors
     }
 
     environment {
-        IMAGE_NAME = "my-java-app"
+        // Changed name to avoid conflict
+        IMAGE_NAME = "my-spring-boot-app" 
         APP_PORT = "8090"
     }
 
@@ -34,17 +34,14 @@ pipeline {
             when { expression { params.ACTION == 'Deploy' } }
             steps {
                 script {
-                    // BRUTE FORCE AUTHENTICATION
-                    
-                    // 1. Point to the manual installation folder
                     def scannerHome = '/opt/sonar-scanner'
                     
-                    // 2. Run the command with the TOKEN directly in the string
-                    // YOU MUST REPLACE 'PASTE_YOUR_TOKEN_HERE' WITH YOUR ACTUAL TOKEN
+                    // FIX: Changed projectKey to 'my-spring-boot-app' to avoid conflict
+                    // REMINDER: Paste your token below
                     sh """
                         ${scannerHome}/bin/sonar-scanner \
-                        -Dsonar.login=squ_6d5251468ad325f36953a8d6f83285f3d4b1bddf \
-                        -Dsonar.projectKey=my-java-app \
+                        -Dsonar.login=PASTE_YOUR_TOKEN_HERE \
+                        -Dsonar.projectKey=my-spring-boot-app \
                         -Dsonar.sources=src \
                         -Dsonar.java.binaries=target/classes
                     """
@@ -70,6 +67,7 @@ pipeline {
         stage('Deploy Container') {
             when { expression { params.ACTION == 'Deploy' } }
             steps {
+                echo 'Deploying to Server...'
                 sh "docker stop ${IMAGE_NAME} || true"
                 sh "docker rm ${IMAGE_NAME} || true"
                 sh "docker run -d -p ${APP_PORT}:8080 --name ${IMAGE_NAME} ${IMAGE_NAME}"
