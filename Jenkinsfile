@@ -14,7 +14,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo 'Downloading source code from GitHub...'
-                git 'https://github.com/jenkins-docs/simple-java-maven-app.git'
+               	checkout scm
             }
         }
 
