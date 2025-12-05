@@ -48,6 +48,10 @@
 
 pipeline { agent any
 
+parameters {
+    choice(name: 'ACTION', choices: ['Deploy', 'Destroy'], description: 'Choose whether to Deploy or Destroy the app')
+}
+
 tools {
     maven 'MyLocalMaven'
     jdk 'JDK-17'
@@ -66,30 +70,53 @@ stages {
     }
 
     stage('Build JAR') {
+        when {
+            expression { params.ACTION == 'Deploy' }
+        }
         steps {
+            echo 'Action is Deploy: Compiling Code...'
             sh 'mvn clean package'
         }
     }
 
     stage('Build Docker Image') {
+        when {
+            expression { params.ACTION == 'Deploy' }
+        }
         steps {
             script {
                def dockerfileContent = """
-    	 	   FROM eclipse-temurin:17-jdk-alpine
-    		   COPY target/*.jar app.jar
-    		   ENTRYPOINT ["java", "-jar", "/app.jar"]
-	       """
-                writeFile file: 'Dockerfile', text: dockerfileContent
+                   FROM eclipse-temurin:17-jdk-alpine
+                   COPY target/*.jar app.jar
+                   ENTRYPOINT ["java", "-jar", "/app.jar"]
+               """
+               writeFile file: 'Dockerfile', text: dockerfileContent
             }
             sh "docker build -t ${IMAGE_NAME} ."
         }
     }
 
     stage('Deploy Container') {
+        when {
+            expression { params.ACTION == 'Deploy' }
+        }
         steps {
+            echo 'Deploying to Server...'
             sh "docker stop ${IMAGE_NAME} || true"
             sh "docker rm ${IMAGE_NAME} || true"
             sh "docker run -d -p ${APP_PORT}:8080 --name ${IMAGE_NAME} ${IMAGE_NAME}"
+        }
+    }
+
+    stage('Destroy Container') {
+        when {
+            expression { params.ACTION == 'Destroy' }
+        }
+        steps {
+            echo 'Destroying Environment...'
+            sh "docker stop ${IMAGE_NAME} || true"
+            sh "docker rm ${IMAGE_NAME} || true"
+            echo "Container ${IMAGE_NAME} has been removed."
         }
     }
 }
