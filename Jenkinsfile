@@ -74,11 +74,11 @@ stages {
     stage('Build Docker Image') {
         steps {
             script {
-                def dockerfileContent = """
-                    FROM openjdk:17-jdk-alpine
-                    COPY target/*.jar app.jar
-                    ENTRYPOINT ["java", "-jar", "/app.jar"]
-                """
+               def dockerfileContent = """
+    	 	   FROM eclipse-temurin:17-jdk-alpine
+    		   COPY target/*.jar app.jar
+    		   ENTRYPOINT ["java", "-jar", "/app.jar"]
+	       """
                 writeFile file: 'Dockerfile', text: dockerfileContent
             }
             sh "docker build -t ${IMAGE_NAME} ."
