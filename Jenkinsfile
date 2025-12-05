@@ -43,7 +43,7 @@ pipeline {
                     // YOU MUST REPLACE 'PASTE_YOUR_TOKEN_HERE' WITH YOUR ACTUAL TOKEN
                     sh """
                         ${scannerHome}/bin/sonar-scanner \
-                        -Dsonar.login=PASTE_YOUR_TOKEN_HERE \
+                        -Dsonar.login=squ_6d5251468ad325f36953a8d6f83285f3d4b1bddf \
                         -Dsonar.projectKey=my-java-app \
                         -Dsonar.sources=src \
                         -Dsonar.java.binaries=target/classes
