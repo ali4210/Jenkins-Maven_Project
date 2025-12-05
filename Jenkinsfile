@@ -46,6 +46,7 @@
 
 //Modified Version with CD by using Docker to complete the process of CI/CD Pipeline
 
+/*
 pipeline { agent any
 
 parameters {
@@ -76,6 +77,109 @@ stages {
         steps {
             echo 'Action is Deploy: Compiling Code...'
             sh 'mvn clean package'
+        }
+    }
+
+    stage('Build Docker Image') {
+        when {
+            expression { params.ACTION == 'Deploy' }
+        }
+        steps {
+            script {
+               def dockerfileContent = """
+                   FROM eclipse-temurin:17-jdk-alpine
+                   COPY target/*.jar app.jar
+                   ENTRYPOINT ["java", "-jar", "/app.jar"]
+               """
+               writeFile file: 'Dockerfile', text: dockerfileContent
+            }
+            sh "docker build -t ${IMAGE_NAME} ."
+        }
+    }
+
+    stage('Deploy Container') {
+        when {
+            expression { params.ACTION == 'Deploy' }
+        }
+        steps {
+            echo 'Deploying to Server...'
+            sh "docker stop ${IMAGE_NAME} || true"
+            sh "docker rm ${IMAGE_NAME} || true"
+            sh "docker run -d -p ${APP_PORT}:8080 --name ${IMAGE_NAME} ${IMAGE_NAME}"
+        }
+    }
+
+    stage('Destroy Container') {
+        when {
+            expression { params.ACTION == 'Destroy' }
+        }
+        steps {
+            echo 'Destroying Environment...'
+            sh "docker stop ${IMAGE_NAME} || true"
+            sh "docker rm ${IMAGE_NAME} || true"
+            echo "Container ${IMAGE_NAME} has been removed."
+        }
+    }
+}
+}
+
+*/
+
+
+// Modified Version with SonarQube Scanner embedded
+
+pipeline { agent any
+
+parameters {
+    choice(name: 'ACTION', choices: ['Deploy', 'Destroy'], description: 'Choose whether to Deploy or Destroy the app')
+}
+
+tools {
+    maven 'MyLocalMaven'
+    jdk 'JDK-17'
+}
+
+environment {
+    IMAGE_NAME = "my-java-app"
+    APP_PORT = "8090"
+}
+
+stages {
+    stage('Checkout Code') {
+        steps {
+            checkout scm
+        }
+    }
+
+    stage('Build JAR') {
+        when {
+            expression { params.ACTION == 'Deploy' }
+        }
+        steps {
+            echo 'Compiling and Building JAR...'
+            sh 'mvn clean package'
+        }
+    }
+
+    stage('SonarQube Analysis') {
+        when {
+            expression { params.ACTION == 'Deploy' }
+        }
+        steps {
+            script {
+                // This pulls the tool you named 'SonarScanner' in Jenkins configuration
+                def scannerHome = tool 'SonarScanner'
+                
+                // Connects to the server you named 'sonar-server' in Jenkins configuration
+                withSonarQubeEnv('sonar-server') {
+                    sh """
+                        ${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.projectKey=my-java-app \
+                        -Dsonar.sources=src \
+                        -Dsonar.java.binaries=target/classes
+                    """
+                }
+            }
         }
     }
 
